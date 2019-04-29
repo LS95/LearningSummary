@@ -108,9 +108,41 @@ waf可以判断用户是否是第一次访问并将请求重定向到默认登�
 + 从规则缺陷bypass WAF。
 
 
+##  分块传输绕过WAF 
+
+
+waf无法识别 但web容器能够正常解析内容
+
+### 思路
+
+在头部加入 Transfer-Encoding: chunked 之后，就代表这个报文采用了分块编码。这时，*post*请求报文中的数据部分需要改为用一系列分块来传输。每个分块包含十六进制的长度值和数据，长度值独占一行，长度不包括它结尾的，也不包括分块数据结尾的，且最后需要用0独占一行表示结束。
+
+分块传输可以在长度标识处加上; 作为注释 
+
+eg:
+```
+9;kkkkk
+1234567=1
+4;ooo=222
+2345
+0
+(两个换行)
+
+
+```
+
+分块编码传输需要将关键字and,or,select ,union等关键字拆开编码，不然仍然会被waf拦截。编码过程中长度需包括空格的长度。最后用0表示编码结束，并在0后空两行表示数据包结束，不然点击提交按钮后会看到一直处于waiting状态。
+
+此方法只适合post数据提交绕过  
+
+
+
 
 # 参考链接
 
 + [WAF的相关知识记录](https://ixyzero.com/blog/archives/3079.html)
 + [WAF渗透攻防实践](http://www.arkteam.net/?p=3025)
 + [WAF攻防研究之四个层次Bypass WAF](https://xz.aliyun.com/t/15)
++ [利用分块传输吊打所有WAF](https://www.anquanke.com/post/id/169738)
++ [Burp suite 分块传输辅助插件](https://github.com/c0ny1/chunked-coding-converter)
++ [编写Burp分块传输插件绕WAF](https://mp.weixin.qq.com/s?__biz=Mzg3NjA4MTQ1NQ==&mid=2247483787&idx=1&sn=54c33727696f8ee6d67f997acc11ab89&chksm=cf36f9cbf84170dd7da9b48b3365fb05d7ccec6bdeff480d0c38962f712e400a40b2b38dc467&token=360242838&lang=zh_CN#rd)
